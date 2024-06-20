@@ -39,7 +39,7 @@ cwnd와 ssthresh 변수를 사용해 네트워크 상황 변화에 따라 적절
 #include <time.h>
 
 ### PACKET_SIZE 매크로를 정의하여 데이터 패킷의 최대 크기를 지정합니다.
-Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
+### Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
 
 #define PACKET_SIZE 1024
 
@@ -460,13 +460,13 @@ int main(int argc, char *argv[]) {
 
 
 #### 컴파일 화면
-https://github.com/torosa1/project2/assets/165176275/16523009-165b-4481-9bda-f60c05978188
+[https://github.com/torosa1/project2/assets/165176275/16523009-165b-4481-9bda-f60c05978188](https://github.com/torosa1/tcp-reno/assets/165176275/b81f9025-b810-4fbc-aafd-9b4e9f80eede)
 
 #### 송신자 실행 파일
-https://github.com/torosa1/project2/assets/165176275/9146a915-dd51-45cc-9a01-c3128b51a81a
+[https://github.com/torosa1/project2/assets/165176275/9146a915-dd51-45cc-9a01-c3128b51a81a](https://github.com/torosa1/tcp-reno/assets/165176275/6e975bee-778a-4169-9874-216b2f6bfe8f)
 
 #### 수신자 실행 파일
-https://github.com/torosa1/project2/assets/165176275/c8456fea-f648-466a-b823-0a4c534b21e4
+[https://github.com/torosa1/project2/assets/165176275/c8456fea-f648-466a-b823-0a4c534b21e4](https://github.com/torosa1/tcp-reno/assets/165176275/6964f110-4e26-41cc-8c42-8b96af6b53ee)
 
 #### 참고 사이트
 
