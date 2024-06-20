@@ -1,10 +1,10 @@
 # Term Project #3
 
-### 프로젝트 프로그램의 목적
+## 프로젝트 프로그램의 목적
 
 TCP Reno 혼잡 제어 메커니즘을 통해 네트워크 혼잡을 방지하고 공정성을 보장하며 안정적이고 효율적인 데이터 전송을 달성하는 프로그램을 만드는 것입니다.
 
-### 프로젝트 코드 특징
+## 프로젝트 코드 특징
 
 각 패킷에는 타입, 플래그, 시퀀스 번호, 확인 번호, 데이터 길이 및 실제 데이터가 포함합니다.
 
@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
     log_event("SYN 패킷 전송 완료");
 ```
 ### recvfrom 함수를 사용하여 SYN-ACK 패킷을 수신하고, 수신 시간 초과 시 소켓을 닫고 프로그램을 종료합니다.
+```
     Packet synAck;
     socklen_t addrLen = sizeof(receiverAddr);
     if (recvfrom(sockfd, &synAck, sizeof(synAck), 0, (struct sockaddr *)&receiverAddr, &addrLen) < 0) {
@@ -127,8 +128,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     log_event("SYN-ACK 패킷 수신 완료");
-
+```
 ### ACK 패킷을 생성하고 송신자에게 전송합니다.
+```
     Packet ack;
     ack.type = 0;
     ack.flag = 2;
@@ -138,29 +140,33 @@ int main(int argc, char *argv[]) {
 
     sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&receiverAddr, sizeof(receiverAddr));
     log_event("ACK 패킷 전송 완료");
-
+```
 ### 지정된 파일을 읽기 모드("r")로 엽니다. 파일 열기 실패 시 소켓을 닫고 프로그램을 종료합니다.
+```
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
         close(sockfd);
         return 1;
     }
-
+```
 ### cwnd를 1로 설정합니다. 임계치(ssthresh)를 64로 설정합니다.
+```
     int cwnd = 1;
     int ssthresh = 64;
     int seqNum = 0;
     int ackNum = 0;
     int packetsSent = 0;
     int packetsInFlight = 0;
-
+```
 ### 시간 초과를 설정하기 위해 setsockopt 함수를 사용하여 소켓의 수신 타임아웃 값을 설정합니다.
+```
     struct timeval timeout;
     timeout.tv_sec = timeoutInterval;
     timeout.tv_usec = timeoutInterval * 1000;
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
-
+```
 ### 현재 송신 윈도우(cwnd) 내에서 전송할 수 있는 만큼 데이터 패킷(data)을 생성하고 송신자에게 전송합니다.
+```
     while (1) {
         while (packetsInFlight < cwnd) {
             Packet data;
@@ -172,7 +178,9 @@ int main(int argc, char *argv[]) {
             if (data.length == 0) {
                 break;
             }
+```
 ### 각 데이터 패킷의 전송 완료를 로그합니다.
+```
             sendto(sockfd, &data, sizeof(data), 0, (struct sockaddr *)&receiverAddr, sizeof(receiverAddr));
             char log_msg[128];
             sprintf(log_msg, "seqNum %d번 DATA 패킷 전송 완료", data.seqNum);
@@ -181,15 +189,17 @@ int main(int argc, char *argv[]) {
             packetsInFlight++;
             packetsSent++;
         }
-
+```
 ### recvfrom 함수로 ACK 패킷을 수신하다가 타임아웃(EAGAIN 또는 EWOULDBLOCK)이 발생하면 메시지를 출력하고 아직 ACK를 받지 못한 패킷들을 재전송합니다.
+```
         Packet ack;
         if (recvfrom(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&receiverAddr, &addrLen) < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 log_event("타임아웃! 재전송 중");
-
+```
 ### for 루프를 사용하여 ackNum부터 seqNum까지의 패킷을 차례로 읽어 재전송합니다.
 ### 파일 포인터를 fseek 함수를 사용하여 해당 패킷 위치로 이동한 후, 데이터 패킷을 다시 읽고 전송합니다.
+```
                 for (int i = ackNum; i < seqNum; i++) {
                     fseek(fp, (i - ackNum) * (PACKET_SIZE - 12), SEEK_SET);
                     Packet data;
@@ -211,8 +221,10 @@ int main(int argc, char *argv[]) {
             }
             break;
         }
+```
 ### recvfrom 함수를 통해 ACK 패킷을 수신하면 ACK 패킷의 유형과 플래그를 확인하여 로그를 출력합니다.
 ### ACK 패킷이 ACK 드랍 확률(ackDropProb)에 따라 드랍될 수 있습니다. 드랍되면 "ACK 패킷 드랍!" 메시지를 출력하고 다음 루프를 진행합니다. 수신한 ACK 패킷에 따라 송신 중인 패킷의 수(packetsInFlight)를 감소시키고, 다음에 기대하는 ACK 번호(ackNum)를 설정합니다.
+```
         if (ack.type == 0 && ack.flag == 2) {
             char log_msg[128];
             sprintf(log_msg, "ackNum %d번 ACK 패킷 수신 완료", ack.ackNum);
@@ -223,12 +235,16 @@ int main(int argc, char *argv[]) {
             }
             packetsInFlight--;
             ackNum = ack.seqNum + 1;
+```
 ### 모든 데이터 패킷이 성공적으로 전송되면 메시지를 출력하고 루프를 종료합니다.
+```
             if (ackNum == seqNum) {
                 log_event("파일 전송 완료!");
                 break;
             }
+```
 ### 송신 윈도우 크기(cwnd)를 업데이트합니다. 송신 윈도우가 0이 될때 1로 설정하고, 아닐 경우 슬로 스타트와 컨젼션 기반의 증가 방식으로 조절합니다.
+```
             if (packetsInFlight == 0) {
                 cwnd = 1;
             } else {
@@ -243,8 +259,9 @@ int main(int argc, char *argv[]) {
             log_event(log_msg);
         }
     }
-
+```
 ### FIN 패킷을 생성하고 송신자에게 전송합니다. recvfrom 함수를 사용하여 FIN-ACK 패킷을 수신하고 수신 성공 시 메시지를 출력합니다. 
+```
     Packet fin;
     fin.type = 0;
     fin.flag = 3;
@@ -261,15 +278,15 @@ int main(int argc, char *argv[]) {
     } else {
         log_event("FIN-ACK 패킷 수신 완료");
     }
-
+```
 ### 소켓과 파일을 닫고 프로그램을 종료합니다.
+```
     close(sockfd);
     fclose(fp);
     return 0;
 }
-
-
 ```
+
 ### 사용법
 ./render <송신포트> <수신IP> <수신포트> <타임아웃> <파일이름> <ACK손실확률>
 
@@ -295,8 +312,8 @@ int main(int argc, char *argv[]) {
 이 프로그램은 여러 기능이 추가된 TCP를 통해 데이터를 수신합니다.
 성뢰성 있는 데이터 전송을 위해 ACK 패킷을 수신하여 SYN-ACK 패킷 송신자에게 전송함으로 데이터 패킷을 드랍을 방지합니다.
 
-
-```c
+## receiver.c
+```
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -305,11 +322,13 @@ int main(int argc, char *argv[]) {
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-
+```
 ### 패킷의 최대 크기를 정의하는 매크로입니다. 데이터 패킷의 최대 크기는 1024바이트로 설정됩니다.
+```
 #define PACKET_SIZE 1024
-
+```
 ### 전송될 패킷의 형식을 나타냅니다. 다섯 개의 정수형 필드와 데이터를 저장할 문자열 배열(data)이 포함되어 있습니다.
+```
 typedef struct {
     int type;
     int flag;
@@ -318,67 +337,78 @@ typedef struct {
     int length;
     char data[PACKET_SIZE - 12];
 } Packet;
-
+```
 ### log_event 함수는 전달된 이벤트 문자열을 출력하고, 1초간 잠시 멈춥니다. 
+```
 void log_event(const char *event) {
     printf("%s\n", event);
     sleep(1);
 }
-
+```
 ### main 함수에서 프로그램의 시작합니다. 명령행 인자의 개수가 3개가 아니면 종료합니다.
+```
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         printf("%s <수신자 포트> <드랍 확률>\n", argv[0]);
         sleep(2);
         exit(1);
     }
-
+```
 ### 명령행 인자로 받은 수신자 포트 번호와 드랍 확률을 정수형(receiver_port)과 실수형(drop_probability)으로 변환합니다.
+```
     int receiver_port = atoi(argv[1]);
     double drop_probability = atof(argv[2]);
-
+```
 ### 난수 생성기를 초기화하기 위해 srand 함수를 호출합니다. 이 함수는 현재 시간을 시드로 사용하여 난수 시퀀스를 초기화합니다.
+```
     srand(time(NULL));
-
+```
 ### 소켓을 생성합니다. 생성에 실패하면 프로그램을 1로 종료합니다.
+```
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         return 1;
     }
-
+```
 ### 수신자의 주소 정보를 저장할 receiver_addr 구조체를 초기화하고 설정합니다. 주소 체계(AF_INET), 포트 번호, IP 주소(INADDR_ANY)를 설정합니다.
+```
     struct sockaddr_in receiver_addr;
     memset(&receiver_addr, 0, sizeof(receiver_addr));
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(receiver_port);
     receiver_addr.sin_addr.s_addr = INADDR_ANY;
-
+```
 ### 생성한 소켓을 수신자의 주소 정보에 바인딩합니다. 바인딩에 실패하면 소켓을 닫고 프로그램을 1로 종료합니다.
+```
     if (bind(sockfd, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr)) < 0) {
         close(sockfd);
         return 1;
     }
-
+```
 ### 송신자의 주소 정보를 저장할 sender_addr 구조체와 패킷 수신 시 사용할 변수들을 선언합니다.
+```
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
     Packet packet;
     int expected_seq_num = 0;
-
+```
 ### "receiver_file"이라는 이름으로 쓰기 모드(wb)로 파일을 엽니다. 실패하 프로그램을 1로 종료합니다
+```
     FILE *file = fopen("receiver_file", "wb");
     if (file == NULL) {
         close(sockfd);
         return 1;
     }
-
+```
 ### 무한 루프에서 recvfrom 함수를 사용하여 소켓에서 패킷을 수신합니다. 수신에 실패하면 다시 루프를 실행합니다
+```
     while (1) {
         if (recvfrom(sockfd, &packet, sizeof(packet), 0, (struct sockaddr *)&sender_addr, &addr_len) < 0) {
             continue;
         }
-
+```
 ### SYN 패킷: "SYN 패킷 수신 완료" 로그를 출력하고 SYN-ACK 패킷을 생성하여 송신자에게 전송합니다.
+```
         if (packet.flag == 1 && packet.type == 0) {
             log_event("SYN 패킷 수신 완료");
             Packet syn_ack;
@@ -390,12 +420,14 @@ int main(int argc, char *argv[]) {
 
             sendto(sockfd, &syn_ack, sizeof(syn_ack), 0, (struct sockaddr *)&sender_addr, addr_len);
             log_event("SYN-ACK 패킷 전송 완료");
-
+```
 ### ACK 패킷: "ACK 패킷 수신 완료" 로그를 출력합니다.
+```
         } else if (packet.flag == 2 && packet.type == 0) {
             log_event("ACK 패킷 수신 완료");
-
+```
 ### FIN 패킷: "FIN 패킷 수신 완료" 로그를 출력하고, FIN-ACK 패킷을 생성하여 송신자에게 전송하고 루프를 종료합니다.
+```
         } else if (packet.flag == 3 && packet.type == 0) {
             log_event("FIN 패킷 수신 완료");
             Packet fin_ack;
@@ -408,8 +440,9 @@ int main(int argc, char *argv[]) {
             sendto(sockfd, &fin_ack, sizeof(fin_ack), 0, (struct sockaddr *)&sender_addr, addr_len);
             log_event("FIN-ACK 패킷 전송 완료");
             break;
-
+```
 ### DATA 패킷: 수신된 데이터 패킷의 시퀀스 번호를 로그로 출력하고 드랍 확률에 따라 패킷을 드랍할 수 있습니다. 드랍하지 않으면 파일에 패킷의 데이터를 씁니다.
+```
         } else if (packet.type == 1) {
             char log_msg[128];
             sprintf(log_msg, "seqNum %d인 DATA 패킷 수신 완료", packet.seqNum);
@@ -419,36 +452,38 @@ int main(int argc, char *argv[]) {
                 log_event("DATA 패킷 드랍!");
                 continue;
             }
-
+```
 ### 다음 시퀀스 번호를 1 증가시킨 후 ACK 패킷을 생성하여 송신자에게 전송합니다.
+```
             if (packet.seqNum == expected_seq_num) {
                 fwrite(packet.data, 1, packet.length, file);
                 expected_seq_num++;
             }
-
+```
 ### Packet 구조체를 이용하여 ACK 패킷을 만듭니다. ACK 패킷의 type은 0으로 설정되고, flag는 2로 설정됩니다. seqNum은 수신된 데이터 패킷의 seqNum과 동일하게 설정됩니다. ackNum은 기대하는 다음 시퀀스 번호(expected_seq_num)로 설정됩니다.
 ### length는 ACK 패킷에는 필요 없으므로 0으로 설정됩니다.
+```
             Packet ack;
             ack.type = 0;
             ack.flag = 2;
             ack.seqNum = packet.seqNum;
             ack.ackNum = expected_seq_num;
             ack.length = 0;
-
+```
 ### sendto 함수를 사용하여 생성한 ACK 패킷을 송신자에게 전송합니다. sockfd는 소켓 파일 디스크립터, &ack는 전송할 데이터의 포인터, sizeof는 전송할 데이터의 크기, 0은 플래그 값으로 일반적으로 0으로 설정합니다.
+```
             sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&sender_addr, addr_len);
             sprintf(log_msg, "ackNum %d번 ACK 패킷 전송 완료", ack.ackNum);
             log_event(log_msg);
         }
     }
-
+```
 ### 수신된 파일을 닫고 네트워크 소켓을 종료합니다.
+```
     fclose(file);
     close(sockfd);
     return 0;
 }
-
-
 ```
 ### 사용법
 ./receiver <수신포트> <데이터손실확률>
