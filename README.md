@@ -26,7 +26,7 @@ setsockopt 함수를 사용하여 소켓의 타임아웃을 설정합니다. ACK
 크게 추가된 기능은 TCP Reno는 네트워크 혼잡을 감지하여 네트워크 자원을 효율적으로 활용하고 패킷 손실을 최소화합니다.
 cwnd와 ssthresh 변수를 사용해 네트워크 상황 변화에 따라 적절하게 대응함으로써 안정적인 데이터 전송을 보장합니다. 
 
-
+## sender.c
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,10 +37,10 @@ cwnd와 ssthresh 변수를 사용해 네트워크 상황 변화에 따라 적절
 #include <arpa/inet.h>
 #include <errno.h>
 #include <time.h>
-
-## PACKET_SIZE 매크로를 정의하여 데이터 패킷의 최대 크기를 지정합니다.
-## Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
-
+```
+### PACKET_SIZE 매크로를 정의하여 데이터 패킷의 최대 크기를 지정합니다.
+### Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
+```
 #define PACKET_SIZE 1024
 
 typedef struct {
@@ -51,39 +51,45 @@ typedef struct {
     int length;
     char data[PACKET_SIZE - 12];
 } Packet;
-
+```
 ### log_event 함수는 주어진 이벤트 문자열을 표준 출력으로 출력하고 1초간 잠시 멈춥니다.
+```
 void log_event(const char *event) {
     printf("%s\n", event);
     sleep(1);
 }
-
+```
 ### 프로그램 실행 시 7개의 인자가 전달되지 않으면 프로그램을 종료합니다.
+```
 int main(int argc, char *argv[]) {
     if (argc != 7) {
         printf("%s <송신자 포트> <수신자 IP> <수신자 포트> <타임아웃 간격(ms)> <파일 이름> <ACK 드랍 확률>\n", argv[0]);
         sleep(2);
         exit(1);
     }
-
+```
 ### 명령행 인자로부터 송신자 포트(senderPort), 수신자 IP 주소(receiverIP), 수신자 포트(receiverPort), 타임아웃 간격(timeoutInterval), 파일 이름(filename), ACK 드랍 확률(ackDropProb)을 파싱합니다.
+```
     int senderPort = atoi(argv[1]);
     char *receiverIP = argv[2];
     int receiverPort = atoi(argv[3]);
     int timeoutInterval = atoi(argv[4]);
     char *filename = argv[5];
     float ackDropProb = atof(argv[6]);
-
+```
 ### srand(time(NULL));를 호출하여 난수 발생기를 시드화합니다.
+```
     srand(time(NULL));
-
+```
 ### socket 함수를 사용해 소켓을 생성합니다.
+```
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         return 1;
     }
-
+```
 ### senderAddr 구조체를 초기화하고 송신자의 주소(senderPort)로 바인딩합니다.
+```
     struct sockaddr_in senderAddr, receiverAddr;
     memset(&senderAddr, 0, sizeof(senderAddr));
     senderAddr.sin_family = AF_INET;
@@ -94,6 +100,7 @@ int main(int argc, char *argv[]) {
         close(sockfd);
         return 1;
     }
+```
 ### receiverAddr 구조체를 초기화하고 수신자의 주소(receiverIP, receiverPort)를 설정합니다.
     memset(&receiverAddr, 0, sizeof(receiverAddr));
     receiverAddr.sin_family = AF_INET;
@@ -101,6 +108,7 @@ int main(int argc, char *argv[]) {
     receiverAddr.sin_addr.s_addr = inet_addr(receiverIP);
 
 ### SYN 패킷을 생성하고 sendto 함수를 사용하여 송신자에게 전송합니다.
+```
     Packet syn;
     syn.type = 0;
     syn.flag = 1;
@@ -110,7 +118,7 @@ int main(int argc, char *argv[]) {
 
     sendto(sockfd, &syn, sizeof(syn), 0, (struct sockaddr *)&receiverAddr, sizeof(receiverAddr));
     log_event("SYN 패킷 전송 완료");
-
+```
 ### recvfrom 함수를 사용하여 SYN-ACK 패킷을 수신하고, 수신 시간 초과 시 소켓을 닫고 프로그램을 종료합니다.
     Packet synAck;
     socklen_t addrLen = sizeof(receiverAddr);
