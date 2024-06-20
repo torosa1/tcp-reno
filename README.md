@@ -38,8 +38,8 @@ cwnd와 ssthresh 변수를 사용해 네트워크 상황 변화에 따라 적절
 #include <errno.h>
 #include <time.h>
 
-### PACKET_SIZE 매크로를 정의하여 데이터 패킷의 최대 크기를 지정합니다.
-### Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
+## PACKET_SIZE 매크로를 정의하여 데이터 패킷의 최대 크기를 지정합니다.
+## Packet 구조체를 정의하여 네트워크 패킷의 필드들을 포함합니다 (type, flag, seqNum, ackNum, length, data).
 
 #define PACKET_SIZE 1024
 
